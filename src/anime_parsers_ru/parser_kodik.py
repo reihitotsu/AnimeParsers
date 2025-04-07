@@ -658,19 +658,9 @@ class KodikParser:
 
     def _convert(self, string: str):
         # Декодирование строки со ссылкой
-
-        if self._crypt_step:
-            crypted_url = "".join([self._convert_char(i, self._crypt_step) for i in string])
-            padding = (4 - (len(crypted_url) % 4)) % 4
-            crypted_url += "=" * padding
-            try:
-                result = b64decode(crypted_url).decode("utf-8")
-                if "mp4:hls:manifest.m3u8" in result:
-                    return result
-            except UnicodeDecodeError:
-                pass
-        
-        for rot in range(25):
+        for rot in range(27):
+            if self._crypt_step is not None:
+                rot = self._crypt_step
             crypted_url = "".join([self._convert_char(i, rot) for i in string])
             padding = (4 - (len(crypted_url) % 4)) % 4
             crypted_url += "=" * padding
@@ -680,6 +670,7 @@ class KodikParser:
                     self._crypt_step = rot
                     return result
             except UnicodeDecodeError:
+                self._crypt_step = None
                 continue
         else:
             raise errors.DecryptionFailure
